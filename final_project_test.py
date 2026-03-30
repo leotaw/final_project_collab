@@ -1,6 +1,10 @@
 
 """" This is a test file for the collabrative project 
-due wednesday morning. '"""" 
+due wednesday morning. """
 
-class person: 
-"""" A person making the commit """
+class Person: 
+    """A person making the commit
+    
+    Attributes: 
+        name (str): the Person's name
+    """
