@@ -10,14 +10,13 @@ class Person:
     """
     """Elizabeth made this commit"""
     
-    class movement:
-        """ This is just a make believe part of the test file, but it involves movement
+class movement:
+    """ This is just a make believe part of the test file, but it involves movement
         
-        Attributes:
+    Attributes:
         x, y: character positions
         Stamina(int): Energy for moving
         Movement will be up, down, left, and right.
-        
-        "DeMarcus made this commit"
-        
-        """
+         """
+    """ DeMarcus made this commit"""
+    
