@@ -127,3 +127,4 @@ def obtain_tool(inventory, cell, max_inventory_size):
     cell["tool"] = None
 
     return inventory
+    
