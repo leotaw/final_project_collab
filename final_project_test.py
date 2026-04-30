@@ -1,7 +1,13 @@
 
-"""" This is a test file for the collabrative project 
-due wednesday morning. """
 import random
+import os
+import sys
+
+"""Constants """
+
+ROWS = 10
+COLS = 10
+MAX_INVENTORY = 5
 
 class Person: 
     """A person making the commit
@@ -28,6 +34,21 @@ def generate_world():
     cols = 10
     tools = ["key", "wood_plank", "rock", "ladder", "parachute"]
     obstacles = ["door", "lava", "dragon", "up_clif", "down_clif"]
+    TOOL_MAP = dict(zip(obstacles, tools)) 
+    
+    #Build empty grid
+    grid = [[{"obstacle": None, "tool": None} for _ in range(cols)]
+            for _ in range(rows)]
+    
+    # Reserve corners: (0,0) player starts, (rows-1, cols-1) exit
+    reserved = {(0, 0), (0, 1), (1, 0), (rows - 1, cols - 1)}
+ 
+    # Collect valid positions
+    positions = [(r, c) for r in range(rows) for c in range(cols)
+                 if (r, c) not in reserved]
+    random.shuffle(positions)
+ 
+    
     
     obstacles_info = []
     tools_info = []
@@ -127,4 +148,5 @@ def obtain_tool(inventory, cell, max_inventory_size):
     cell["tool"] = None
 
     return inventory
+    
     
