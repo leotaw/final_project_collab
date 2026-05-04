@@ -3,248 +3,355 @@ import random
 from tkinter import messagebox
 
 """
-Final Project: Grid Rivalry
-Description: A collaborative survival game integrating team-defined 
-mechanics for world generation, tool usage, and movement physics.
+Grid Rivalry - Final Polished Version
+
+Features:
+- Fog of war exploration
+- Tools always visible (even in fog)
+- Obstacles require specific tools (hard walls)
+- TAB key shows nearby obstacle requirements
+- Moving threats with penalties
+- Lives + inventory system
+- Start + Finish clearly marked
 """
 
-class Person: 
-    """
-    Represents a person involved in the game system, used for identity tracking.
-    
-    Attributes:
-        name (str): The name of the player or collaborator.
-        role (str): The designated role (e.g., 'Explorer').
-    """
-    def __init__(self, name, role="Explorer"):
-        """
-        Initializes the Person object with a name and a role.
-        
-        Args:
-            name (str): The name of the person.
-            role (str): The role they play in the game context.
-        """
-        self.name = name
-        self.role = role
-
-class movement:
-    """
-    Handles the coordinate logic and energy costs for entity movement.
-        
-    Attributes:
-        stamina (int): Current energy level for moving.
-        cost_per_move (int): Stamina consumed per successful step.
-    """
-    def __init__(self, start_stamina=100):
-        """
-        Initializes the movement physics with a starting stamina pool.
-        
-        Args:
-            start_stamina (int): Total energy the player starts with.
-        """
-        self.stamina = start_stamina
-        self.cost_per_move = 5
-
-    def calculate_move(self, current_r, current_c, dr, dc):
-        """
-        Checks if movement is possible based on stamina and grid boundaries.
-        
-        Args:
-            current_r (int): Current row position.
-            current_c (int): Current column position.
-            dr (int): Change in row.
-            dc (int): Change in column.
-            
-        Returns:
-            tuple: (int, int, bool) representing (new_r, new_c, success_status).
-        """
-        if self.stamina >= self.cost_per_move:
-            new_r = current_r + dr
-            new_c = current_c + dc
-            if 0 <= new_r < 10 and 0 <= new_c < 10:
-                self.stamina -= self.cost_per_move
-                return new_r, new_c, True
-        return current_r, current_c, False
-
-
-# Global Constants
+# ---------------- CONFIG ----------------
 ROWS, COLS = 10, 10
 CELL_SIZE = 60
+
 TOOLS = ["key", "wood_plank", "rock", "ladder", "parachute"]
-OBSTACLES = ["door", "lava", "dragon_obs", "up_clif", "down_clif"]
+OBSTACLES = ["door", "lava", "dragon_obs", "up_cliff", "down_cliff"]
 TOOL_MAP = dict(zip(OBSTACLES, TOOLS))
+
 MAX_LIVES = 3
+MAX_INVENTORY = 5
 THREAT_SPEED = 600
 
-OBS_ICON = {"door": "🚪", "lava": "🌋", "dragon_obs": "🐉", "up_clif": "⛰", "down_clif": "🕳"}
-TOOL_ICON = {"key": "🔑", "wood_plank": "🪵", "rock": "🪨", "ladder": "🪜", "parachute": "🪂"}
+OBS_ICON = {"door": "🚪", "lava": "🌋", "dragon_obs": "🐉",
+            "up_cliff": "⛰", "down_cliff": "🕳"}
 
+TOOL_ICON = {"key": "🔑", "wood_plank": "🪵", "rock": "🪨",
+             "ladder": "🪜", "parachute": "🪂"}
 
-def generate_world():
-    """
-    Randomly populates the grid with obstacles and tools while reserving corners.
-    
-    Returns:
-        list: A 2D list (grid) containing cell dictionaries with item data.
-    """
-    grid = [[{"obstacle": None, "tool": None, "rev": False} for _ in range(COLS)] for _ in range(ROWS)]
-    reserved = {(0, 0), (0, 1), (1, 0), (ROWS - 1, COLS - 1)}
-    positions = [(r, c) for r in range(ROWS) for c in range(COLS) if (r, c) not in reserved]
-    random.shuffle(positions)
-    pairs = list(zip(OBSTACLES, TOOLS))
-    
-    for i, (obs, tool) in enumerate(pairs):
-        grid[positions[i*2][0]][positions[i*2][1]]["obstacle"] = obs
-        grid[positions[i*2+1][0]][positions[i*2+1][1]]["tool"] = tool
-    return grid
-
-def obtain_tool(inventory, cell, max_size=5):
-    """
-    Processes the collection of a tool from a specific grid cell.
-    
-    Args:
-        inventory (list): The player's current list of tools.
-        cell (dict): The data dictionary for the current grid tile.
-        max_size (int): The inventory capacity.
-        
-    Returns:
-        list: The updated inventory.
-    """
-    if cell.get("tool") and len(inventory) < max_size:
-        inventory.append(cell["tool"])
-        cell["tool"] = None
-    return inventory
-
-def Use_tool(inventory, cell, tool_map):
-    """
-    Checks for an obstacle and attempts to clear it using the inventory.
-    
-    Args:
-        inventory (list): Current tools held by the player.
-        cell (dict): The data dictionary for the current grid tile.
-        tool_map (dict): Mapping of obstacles to required tools.
-        
-    Returns:
-        tuple: (list, bool) representing the (updated_inventory, success_flag).
-    """
-    obs = cell.get("obstacle")
-    if not obs: return inventory, True
-    req = tool_map.get(obs)
-    if req in inventory:
-        inventory.remove(req)
+# ---------------- TEAM FUNCTIONS ----------------
+def use_tool(inventory, obstacle):
+    needed = TOOL_MAP[obstacle]
+    if needed in inventory:
+        inventory.remove(needed)
         return inventory, True
     return inventory, False
 
 
+def obtain_tool(inventory, cell):
+    tool = cell.get("tool")
+    if not tool:
+        return inventory
+    if tool not in inventory and len(inventory) < MAX_INVENTORY:
+        inventory.append(tool)
+        cell["tool"] = None
+    return inventory
+
+# ---------------- PLAYER ----------------
 class Player:
     """
-    Main entity class representing the player in the game.
-    
+    Represents the player in the game.
+
     Attributes:
-        identity (Person): The Person object representing the player.
-        physics (movement): The movement object handling stamina and position.
-        icon (str): Visual emoji representation.
-        inventory (list): Tools currently held.
-        lives (int): Remaining lives.
+        r (int): Current row position
+        c (int): Current column position
+        inventory (list): Tools collected by the player
+        lives (int): Remaining lives
     """
-    def __init__(self, name, icon):
-        """
-        Initializes player state and creates movement/identity instances.
-        
-        Args:
-            name (str): Name of the player.
-            icon (str): Emoji icon.
-        """
-        self.identity = Person(name)
-        self.physics = movement()
-        self.icon = icon
+    def __init__(self):
         self.r, self.c = 0, 0
         self.inventory = []
         self.lives = MAX_LIVES
-        self.score = 0
 
-    def attempt_move(self, dr, dc):
-        """
-        Updates the player's position using the internal movement physics engine.
-        
-        Args:
-            dr (int): Delta row.
-            dc (int): Delta column.
-            
-        Returns:
-            bool: True if the move was successful and within stamina limits.
-        """
-        self.r, self.c, success = self.physics.calculate_move(self.r, self.c, dr, dc)
-        return success
-
+# ---------------- THREAT ----------------
 class Threat:
     """
-    A dynamic enemy that moves independently around the grid.
-    
-    Attributes:
-        icon (str): Visual emoji for the threat.
-        name (str): Name of the threat.
-        penalty (str): The type of penalty applied on collision.
-    """
-    def __init__(self, icon, name, penalty):
-        """Initializes threat with starting random position."""
-        self.icon, self.name, self.penalty = icon, name, penalty
-        self.r, self.c = random.randint(3, 8), random.randint(3, 8)
+    Represents a moving enemy on the grid.
 
-    def roam(self):
-        """Moves the threat one tile in a random cardinal direction."""
+    Attributes:
+        icon (str): Visual representation of the threat
+        penalty (str): Type of penalty ('steal', 'wipe', 'reset')
+        r (int): Row position
+        c (int): Column position
+    """
+    def __init__(self, icon, penalty):
+        self.icon = icon
+        self.penalty = penalty
+        self.r = random.randint(2, ROWS-3)
+        self.c = random.randint(2, COLS-3)
+
+    def move(self):
+        """
+        Moves the threat randomly one step in any direction
+        within grid boundaries.
+        """ 
         dr, dc = random.choice([(0,1),(0,-1),(1,0),(-1,0)])
-        if 0 <= self.r+dr < ROWS and 0 <= self.c+dc < COLS:
-            self.r += dr
-            self.c += dc
+        nr, nc = self.r + dr, self.c + dc
+        if 0 <= nr < ROWS and 0 <= nc < COLS:
+            self.r, self.c = nr, nc
 
-class CompetitiveGameApp:
+# ---------------- WORLD ----------------
+class GameWorld:
     """
-    The main controller class for the Tkinter application and game loop.
-    
-    Attributes:
-        root (tk.Tk): The main window instance.
-        world_grid (list): The 2D grid of tiles.
-        player (Player): The active player instance.
-        threats (list): List of active threats.
-    """
+    Creates and manages the game grid.
+
+    The grid stores:
+        - obstacles (obs)
+        - tools
+        - revealed state (rev)
+    """    
+    def __init__(self):
+        self.grid = self.create_grid()
+        self.threats = [
+            Threat("🐲","steal"),
+            Threat("👻","reset"),
+            Threat("💣","wipe")
+        ]
+
+    def create_grid(self):
+        grid = [[{"obs":None,"tool":None,"rev":False}
+                 for _ in range(COLS)] for _ in range(ROWS)]
+
+        reserved = {(0,0),(ROWS-1,COLS-1)}
+        positions = [(r,c) for r in range(ROWS) for c in range(COLS)
+                     if (r,c) not in reserved]
+        random.shuffle(positions)
+
+        pairs = list(zip(OBSTACLES, TOOLS))
+        random.shuffle(pairs)
+
+        for i,(obs,tool) in enumerate(pairs):
+            r1,c1 = positions[i*2]
+            r2,c2 = positions[i*2+1]
+            grid[r1][c1]["obs"] = obs
+            grid[r2][c2]["tool"] = tool
+
+        return grid
+
+# ---------------- GAME ----------------
+class GameApp:
     def __init__(self, root):
-        """Initializes UI, bindings, and starts the game tick."""
         self.root = root
-        self.root.title("INST326: Grid Rivalry")
-        self.world_grid = generate_world()
-        self.player = Player("Simran", "🧑‍🚀")
-        self.threats = [Threat("🐉", "Dragon", "steal"), Threat("💣", "Bomb", "bomb")]
-        self.game_active = True
+        self.root.title("Grid Rivalry")
 
-        self._setup_ui()
-        self.root.bind("<Up>", lambda e: self.process_step(-1, 0))
-        self.root.bind("<Down>", lambda e: self.process_step(1, 0))
-        self.root.bind("<Left>", lambda e: self.process_step(0, -1))
-        self.root.bind("<Right>", lambda e: self.process_step(0, 1))
-        
-        self.tick()
+        self.world = GameWorld()
+        self.player = Player()
 
-    def _setup_ui(self):
-        """Initializes the Canvas and status bar labels."""
-        self.canvas = tk.Canvas(self.root, width=COLS*CELL_SIZE, height=ROWS*CELL_SIZE, bg="#1a1a2e")
+        self.canvas = tk.Canvas(root,
+                                width=COLS*CELL_SIZE,
+                                height=ROWS*CELL_SIZE)
         self.canvas.pack()
-        self.status = tk.Label(self.root, text="Stamina: 100 | Lives: 3", fg="white", bg="#16213e")
-        self.status.pack(fill="x")
 
-    def process_step(self, dr, dc):
+        self.status = tk.Label(root, text="Explore and survive!")
+        self.status.pack()
+
+        self.inv_label = tk.Label(root, text="Inventory: []")
+        self.inv_label.pack()
+
+        root.bind("<Key>", self.handle_key)
+        root.bind("<Tab>", self.show_tool_helper)
+
+        self.loop()
+        self.draw()
+
+    def handle_key(self, event):
         """
-        Executes a turn when the player moves, checking for items and collisions.
-        
-        Args:
-            dr (int): Vertical direction.
-            dc (int): Horizontal direction.
+    Handles player movement based on key presses.
+
+    Steps:
+        1. Determine movement direction using dr, dc
+        2. Check bounds
+        3. Check obstacle interaction
+        4. Move player
+        5. Handle tool pickup
+        6. Check win condition
+        7. Check threat collisions
+    """
+        moves = {"Up":(-1,0),"Down":(1,0),"Left":(0,-1),"Right":(0,1)}
+        if event.keysym not in moves:
+            return
+
+        dr, dc = moves[event.keysym]
+        nr = self.player.r + dr
+        nc = self.player.c + dc
+
+        if not (0 <= nr < ROWS and 0 <= nc < COLS):
+            return
+
+        cell = self.world.grid[nr][nc]
+
+        # obstacle check
+        if cell["obs"]:
+            _, success = use_tool(self.player.inventory, cell["obs"])
+            if not success:
+                needed = TOOL_MAP[cell["obs"]]
+                self.status.config(
+                    text=f"⛔ {cell['obs']} ahead! Press TAB → Need: {needed}"
+                )
+                return
+            else:
+                cell["obs"] = None
+                self.status.config(text="✅ Obstacle cleared!")
+
+        # move
+        self.player.r, self.player.c = nr, nc
+        cell["rev"] = True
+
+        # pickup tool
+        self.player.inventory = obtain_tool(self.player.inventory, cell)
+
+        # win check
+        if (nr, nc) == (ROWS-1, COLS-1):
+            messagebox.showinfo("WIN", "🏆 You reached the finish!")
+            self.root.destroy()
+            return
+
+        # threat collision
+        for t in self.world.threats:
+            if (t.r, t.c) == (nr, nc):
+                self.apply_penalty(t)
+
+        self.draw()
+
+    # ---------- TAB HELPER ----------
+    def show_tool_helper(self, event=None):
         """
-        if not self.game_active: return
-        
-        if self.player.attempt_move(dr, dc):
-            cell = self.world_grid[self.player.r][self.player.c]
-            cell["rev"] = True
-            
-            self.player.inventory = obtain_tool(self.player.inventory, cell)
-            new_inv, clear = Use_tool(self.player.inventory, cell, TOOL_MAP)
+    Displays nearby obstacles and the required tools
+    when the player presses the TAB key.
+    """
+        r, c = self.player.r, self.player.c
+        nearby = []
+
+        for dr,dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+            nr,nc = r+dr, c+dc
+            if 0 <= nr < ROWS and 0 <= nc < COLS:
+                obs = self.world.grid[nr][nc]["obs"]
+                if obs:
+                    nearby.append(f"{obs} → {TOOL_MAP[obs]}")
+
+        msg = "\n".join(nearby) if nearby else "No nearby obstacles"
+        messagebox.showinfo("Tool Helper", msg)
+
+    def apply_penalty(self, threat):
+        """
+    Applies the effect of a threat collision.
+
+    Effects:
+        - Removes tools (depending on threat type)
+        - Reduces player lives
+        - Resets player to starting position
+    """
+        p = self.player
+
+        if threat.penalty == "steal" and p.inventory:
+            p.inventory.pop()
+        elif threat.penalty == "wipe":
+            p.inventory.clear()
+
+        p.lives -= 1
+        p.r, p.c = 0, 0
+
+        self.status.config(text=f"💀 Hit by {threat.icon}! Lives: {p.lives}")
+
+        if p.lives <= 0:
+            messagebox.showinfo("Game Over", "You lost!")
+            self.root.destroy()
+
+    # ---------- LOOP ----------
+    def loop(self):
+        """
+    Main game loop.
+
+    Runs repeatedly to:
+        - Move threats
+        - Check collisions
+        - Redraw the game
+    """
+        for t in self.world.threats:
+            t.move()
+            if (t.r, t.c) == (self.player.r, self.player.c):
+                self.apply_penalty(t)
+
+        self.draw()
+        self.root.after(THREAT_SPEED, self.loop)
+    
+    
+    def draw(self):
+        """
+    Renders the entire game state onto the canvas.
+
+    Includes:
+        - Grid cells
+        - Start and finish tiles
+        - Tools (always visible)
+        - Obstacles (only when revealed)
+        - Player
+        - Threats
+    """
+        self.canvas.delete("all")
+
+        for r in range(ROWS):
+            for c in range(COLS):
+                x, y = c * CELL_SIZE, r * CELL_SIZE
+                cell = self.world.grid[r][c]
+
+                is_start = (r, c) == (0, 0)
+                is_goal = (r, c) == (ROWS - 1, COLS - 1)
+
+                if is_start:
+                    color = "#22c55e"
+                elif is_goal:
+                    color = "#fbbf24"
+                elif not cell["rev"]:
+                    color = "#0f2040"
+                else:
+                    color = "#1e3a5f"
+
+                self.canvas.create_rectangle(
+                    x, y, x + CELL_SIZE, y + CELL_SIZE,
+                    fill=color
+                )
+
+                if is_start:
+                    self.canvas.create_text(x+30, y+30, text="🏁")
+                if is_goal:
+                    self.canvas.create_text(x+30, y+30, text="🏆")
+
+                if cell["tool"]:
+                    self.canvas.create_oval(x+10, y+10, x+50, y+50,
+                                            fill="#22c55e")
+                    self.canvas.create_text(
+                        x+30, y+30,
+                        text=TOOL_ICON[cell["tool"]]
+                    )
+
+                if cell["obs"] and cell["rev"]:
+                    self.canvas.create_text(
+                        x+30, y+30,
+                        text=OBS_ICON[cell["obs"]]
+                    )
+
+        for t in self.world.threats:
+            self.canvas.create_text(
+                t.c * CELL_SIZE + 30,
+                t.r * CELL_SIZE + 30,
+                text=t.icon
+            )
+
+        self.canvas.create_text(
+            self.player.c * CELL_SIZE + 30,
+            self.player.r * CELL_SIZE + 30,
+            text="🧑‍🚀"
+        )
+
+        self.inv_label.config(text=f"Inventory: {self.player.inventory}")
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    GameApp(root)
+    root.mainloop()
