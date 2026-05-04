@@ -4,7 +4,7 @@ import random
 from tkinter import messagebox
 
 """
-Grid Rivalry - Final Polished Version
+Escape game 
 
 Features:
 - Fog of war exploration
@@ -16,7 +16,6 @@ Features:
 - Start + Finish clearly marked
 """
 
-# ---------------- CONFIG ----------------
 ROWS, COLS = 10, 10
 CELL_SIZE = 60
 
@@ -52,7 +51,6 @@ def obtain_tool(inventory, cell):
         cell["tool"] = None
     return inventory
 
-# ---------------- PLAYER ----------------
 class Player:
     """
     Represents the player in the game.
@@ -68,7 +66,6 @@ class Player:
         self.inventory = []
         self.lives = MAX_LIVES
 
-# ---------------- THREAT ----------------
 class Threat:
     """
     Represents a moving enemy on the grid.
@@ -95,7 +92,6 @@ class Threat:
         if 0 <= nr < ROWS and 0 <= nc < COLS:
             self.r, self.c = nr, nc
 
-# ---------------- WORLD ----------------
 class GameWorld:
     """
     Creates and manages the game grid.
@@ -133,7 +129,6 @@ class GameWorld:
 
         return grid
 
-# ---------------- GAME ----------------
 class GameApp:
     def __init__(self, root):
         self.root = root
@@ -185,7 +180,6 @@ class GameApp:
 
         cell = self.world.grid[nr][nc]
 
-        # obstacle check
         if cell["obs"]:
             _, success = use_tool(self.player.inventory, cell["obs"])
             if not success:
@@ -218,7 +212,6 @@ class GameApp:
 
         self.draw()
 
-    # ---------- TAB HELPER ----------
     def show_tool_helper(self, event=None):
         """
     Displays nearby obstacles and the required tools
@@ -262,7 +255,6 @@ class GameApp:
             messagebox.showinfo("Game Over", "You lost!")
             self.root.destroy()
 
-    # ---------- LOOP ----------
     def loop(self):
         """
     Main game loop.
