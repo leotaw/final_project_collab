@@ -121,7 +121,19 @@ class Player:
 
 
    def __init__(self):
-       """Places the player at the top-left corner with 3 lives and an empty bag."""
+       """Places the player at the top-left corner with 3 lives and an empty bag.
+       Initializes Player object.
+       
+       Attributes: 
+            r (int): player's starting row position
+            c (int): player's starting collumn position 
+            inventory (list of str): stores collected tools/items
+            lives (int): player's starting number of lives
+            score (int): player's starting score
+       
+        Side Effects: 
+            Creates new Player instance with starting values  
+       """
        self.r         = 0
        self.c         = 0
        self.inventory = []
@@ -130,13 +142,30 @@ class Player:
 
 
    def reset_position(self):
-       """Moves the player back to the starting cell at row 0, column 0."""
+       """Moves the player back to the starting cell at row 0, column 0.
+       
+        Attributes: 
+            r (int): player row position 
+            c (int): player collumn position
+            
+        Side Effects: 
+            resets Player's position only. 
+       
+       """
        self.r = 0
        self.c = 0
 
 
    def lose_life(self):
-       """Subtracts one life and returns True if the player still has lives remaining."""
+       """Subtracts one life and returns True if the player still has lives 
+       remaining.
+       
+        Attributes: 
+            lives (int): player's number of lives
+       
+        Side Effects; 
+            subtracts 1 from Player object's lives attribute
+       """
        self.lives -= 1
        return self.lives > 0
 
@@ -144,18 +173,26 @@ class Player:
 
 
 class Threat:
-   """A moving enemy that roams the grid every half second and penalizes the player on contact."""
+   """A moving enemy that roams the grid every half second and penalizes the 
+    player on contact."""
 
 
    def __init__(self, char, name, penalty_type):
        """
        Sets up the threat with its display character, name, and penalty behavior.
 
-
-       Args:
-           char: single character shown on the grid for this threat
-           name: human-readable name used in status messages
-           penalty_type: one of 'steal', 'reset', or 'bomb'
+        Args:
+           char (str): single character shown on the grid for this threat
+           name (str): human-readable name used in status messages
+           penalty_type (str): one of 'steal', 'reset', or 'bomb'
+           
+        Attributes: 
+            r (int): Threat's row position 
+            c (int): Threat's column position 
+            
+        Side Effects: 
+            Creates new Threat instance with its corresponding values and 
+            starting position. 
        """
        self.char         = char
        self.name         = name
@@ -166,11 +203,17 @@ class Threat:
 
    def roam(self, forbidden):
        """
-       Moves one step in a random valid direction, skipping any forbidden cells.
+        Moves one step in a random valid direction, skipping any forbidden cells.
 
-
-       Args:
+        Args:
            forbidden: a set of (row, col) tuples the threat must not enter
+           
+        Attributes: 
+            r (int): Threat row powisiton 
+            c (int): Threat collumn position 
+            
+        Side Effects: 
+            updates Threat object's position
        """
        directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
        random.shuffle(directions)
@@ -186,7 +229,16 @@ class GameWorld:
 
 
    def __init__(self):
-       """Creates the three threats first, then builds the grid so their cells stay clear."""
+       """Creates the three threats first, then builds the grid so their cells 
+       stay clear.
+       
+        Attributes:
+            threats (int): collection of threat objects in the game 
+            grid (int): grid created by _create_grid() module 
+            
+        Side Effects: 
+            Creates 3 threat objects and builds gameworld grid. 
+       """
        self.threats = [
            Threat("S", "Shadow", "steal"),
            Threat("G", "Ghost",  "reset"),
