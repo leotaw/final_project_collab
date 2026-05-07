@@ -55,13 +55,22 @@ class Player:
     """
     Represents the player in the game.
 
-    Attributes:
+    
+    """
+    def __init__(self):
+        """
+        Initializes Player object.
+        
+        Attributes:
         r (int): Current row position
         c (int): Current column position
         inventory (list): Tools collected by the player
         lives (int): Remaining lives
-    """
-    def __init__(self):
+        
+        Side Effects: 
+        Creates new Player instance with the starting values
+        """
+        
         self.r, self.c = 0, 0
         self.inventory = []
         self.lives = MAX_LIVES
