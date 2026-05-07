@@ -292,11 +292,13 @@ class GameWorld:
 
    def spawn_obstacle(self, player_pos):
        """
-       Places one new random obstacle on a free, non-critical cell and marks it revealed.
+       Places one new random obstacle on a free, non-critical cell and marks it 
+       revealed.
 
 
-       Args:
-           player_pos: (row, col) tuple of the player's current position, which is excluded
+       Arguments:
+           player_pos (tuple): row and col of the player's current position, which 
+           is excluded
        """
        candidates = [
            (r, c)
@@ -329,8 +331,21 @@ class Game:
        the starting status message and internal timers.
 
 
-       Args:
+        Arguments:
            stdscr: the curses standard screen object passed in by curses.wrapper
+           
+        Attributes:
+            stdscr: the curses standard screen object for rendering/keyboard input
+            player: represenging current player state 
+            game_running (bool): boolean value, determining if game loop continues 
+            status_msg (str): instruction/status message for player 
+            move_count (int): counter tracking player moves 
+            last_threat_time: Timestamp of last threat update 
+        
+        Side Effects: 
+            Creates new GameWorld() and Player() objects. Turns off visibility of 
+            cursor in the Terminal. Initializes curses color pairs with init_colors(). 
+            records current system time with time.time() 
        """
        self.stdscr           = stdscr
        self.world            = GameWorld()
@@ -348,7 +363,27 @@ class Game:
 
 
    def run(self):
-       """Runs the main game loop: reads input, ticks threats on a timer, and redraws each frame."""
+       """Runs the main game loop: reads input, ticks threats on a timer, and 
+        redraws each frame.
+       
+        Attributes: 
+            game_running: Controls whether the game loop continues executing
+            stdcr: Used to capture keyboard input through getch() and display
+                    updated game frames
+            last_threat_time: Stores the timestamp of the most recent threat 
+                    movement update
+            
+        Side Effects: 
+        Continuously redraws the game screen using self.draw().
+        Reads player keyboard input with self.stdscr.getch().
+        May update player position and game state through self._handle_input(key).
+        Alters Threats position periodically through self._move_threats().
+        Updates self.last_threat_time with the current system time.
+        Displays the end-game screen by calling self._show_end_screen()
+        after the loop exits.
+        Continuously accesses system time using time.time().
+       
+       """
        while self.game_running:
            self.draw()
            key = self.stdscr.getch()
@@ -370,8 +405,17 @@ class Game:
        or sets game_running to False if the player presses Q.
 
 
-       Args:
+       Arguments:
            key: integer key code returned by stdscr.getch()
+           
+        Attributes:  
+            game_running (bool): Boolean flag controlling whether the game loop 
+                                    should continue
+        Side Effects: 
+            May call self._process_turn(dr, dc) to update player movement, 
+            advance the game state
+            May cause the game loop to exit, setting self.game_running to False
+            Interprets keyboard input using curses key constants
        """
        move_keys = {
            curses.KEY_UP:    (-1,  0),
