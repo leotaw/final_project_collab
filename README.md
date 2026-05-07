@@ -14,8 +14,8 @@ that move around on their own every half second.
 HOW TO RUN 
 -----------
 Open Terminal, navigate to the final_project_collab folder/the directory that
-the program "final_project_test.py" is in. 
-Type in "python3 final_project_test.py" and Enter. 
+the program "testing_project.py" is in. 
+Type in "python3 testing_project.py" and Enter. 
 
 HOW TO PLAY
 -----------
