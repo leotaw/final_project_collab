@@ -445,6 +445,18 @@ class Game:
        Args:
            dr: row delta (-1 for up, +1 for down, 0 for horizontal)
            dc: column delta (-1 for left, +1 for right, 0 for vertical)
+           
+       Attributes: 
+           r (int): player row position
+           c (int): player collumn position
+           inventory (list of str): collection of tools/items held by player
+           score (int): current player score
+           grid (list of dicts): Mapping of obstacle names to the tool required to clear them
+           move_count (int): Number of moves between obstacle spawns
+
+       Side Effects: 
+           Removes/adds to inventory, inspects cells on contact, moves player to new position, removes/spawns
+           obstacles/collected tools on grid, updates player score.
        """
        p      = self.player
        nr, nc = p.r + dr, p.c + dc
@@ -509,7 +521,15 @@ class Game:
 
 
    def _move_threats(self):
-       """Advances every threat one step and then checks whether any now overlap the player."""
+       """Advances every threat one step and then checks whether any now overlap the player.
+       
+       Attributes: 
+       self.world.threats (list): list of threats active in game world
+       
+       Side Effects: 
+           Updates position of threats, prevents threats from entering specific cells on grid, 
+           checks threat collision, may change player attributes/state depending on collision. 
+       """
        forbidden = {(0, 0), (rows - 1, cols - 1)}
        for threat in self.world.threats:
            threat.roam(forbidden)
@@ -517,7 +537,15 @@ class Game:
 
 
    def _check_threat_collision(self):
-       """Scans all threats and triggers a penalty for any that share the player's cell."""
+       """Scans all threats and triggers a penalty for any that share the player's cell.
+
+       Attributes: 
+           self.world.threats (list): list of threats active in game world
+
+       Side Effects: 
+           may reset player to start, subtract from player inventory or deduct a life using _apply_penalty()
+           if player object comes in contact with threat. 
+       """
        p = self.player
        for threat in self.world.threats:
            if (p.r, p.c) == (threat.r, threat.c):
@@ -534,6 +562,15 @@ class Game:
 
        Args:
            threat: the Threat instance that collided with the player
+
+       Attributes: 
+           penalty_type (str): "steal", "reset", or "bomb", description of type of penalty
+           status_msg (f str): a message corresponding to its penalty type
+
+       Side Effects: 
+          may update status message and player status to its respective penalty_type. 
+          Resets position of player using reset_position(). Discontinues game using game_running 
+          if lives run out using p.lose_life(). 
        """
        p = self.player
 
@@ -562,7 +599,11 @@ class Game:
 
 
    def draw(self):
-       """Clears the terminal and redraws the header, grid, legend, and HUD each frame."""
+       """Clears the terminal and redraws the header, grid, legend, and HUD each frame. 
+
+       Side Effects: 
+           calls methods for erasing stdscr, resets header, grid, legend, HUD, and refreshes game. 
+       """
        self.stdscr.erase()
        self._draw_header()
        self._draw_grid()
