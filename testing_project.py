@@ -607,7 +607,7 @@ class Game:
 
 
                if (r, c) == (p.r, p.c):
-                   ch    = " @ "
+                   ch    = " Player "
                    color = curses.color_pair(color_player) | curses.A_BOLD
                elif (r, c) in threat_positions:
                    threat = threat_positions[(r, c)]
