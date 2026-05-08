@@ -1,4 +1,4 @@
-""" leota testing a commit**
+"""
 Grid Rivalry 
 Course: INST326
 
