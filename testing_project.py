@@ -712,7 +712,14 @@ class Game:
 
 
        def put(r, text, pair=color_header):
-           """Writes one line to the legend column, silently ignoring terminal overflow."""
+           """Writes one line to the legend column, silently ignoring terminal overflow.
+
+           Attributes: 
+               stdscr: curses window object for terminal rendering and outputs 
+
+           Raises: 
+               curses.error: if drawing operations cannot be rendered/outside terminal boundaries. 
+           """
            try:
                self.stdscr.addstr(r, legend_col, text, curses.color_pair(pair))
            except curses.error:
@@ -820,7 +827,18 @@ class Game:
 
 
    def _show_end_screen(self):
-       """Displays a win or game-over box centered on the screen and waits for a keypress before exiting."""
+       """Displays a win or game-over box centered on the screen and waits for a keypress before exiting
+       Attributes:
+           stdscr: curses window object for terminal rendering and outputs 
+           p.r (int): player row pos
+           p.c (int): player col pos
+           p.score (int): player score displayed
+           p.lives (int): player number of lives left displayed 
+
+       Side Effects: 
+           clears terminal display, renders status of player score/lives message, stops program until 
+           user presses key, formats/color/bolds displayed text. 
+       """
        self.stdscr.nodelay(False)
        self.stdscr.erase()
        p = self.player
@@ -861,7 +879,15 @@ class Game:
        self.stdscr.getch()
 
 def main(stdscr):
-   """Entry point called by curses.wrapper: creates a Game instance and runs it."""
+   """Entry point called by curses.wrapper: creates a Game instance and runs it.
+
+   Parameters: 
+      stdscr: Main curses window object used for terminal rendering, screen updates, 
+              and input handling.
+   Side Effects:
+       creates/initializes Game instance, runs the game loop, modify terminal display/perfoms 
+       terminal rendering using input handling through curses. 
+   """
    game = Game(stdscr)
    game.run()
 
