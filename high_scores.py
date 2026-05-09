@@ -1,3 +1,5 @@
+import re
+
 def highscores(self):
     with open("scores.txt", "r") as file:
         lines = file.readlines()
