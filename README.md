@@ -14,8 +14,8 @@ that move around on their own every half second.
 HOW TO RUN 
 -----------
 Open Terminal, navigate to the final_project_collab folder/the directory that
-the program "testing_project.py" is in. 
-Type in "python3 testing_project.py" and Enter. 
+the program "grid_rivalry.py" is in. 
+Type in "python3 grid_rivalry.py" and Enter. 
 
 HOW TO PLAY
 -----------
@@ -60,3 +60,56 @@ SCORING
 Controls: arrow keys to move, Q to quit.
 
 
+
+External resources used for curses and terminal rendering
+
+We used external resources primarily to learn how Python’s curses library works for terminal-based rendering and real-time movement.
+
+Python curses documentation
+
+Source:
+
+Python Software Foundation. curses — Terminal handling for character-cell displays
+https://docs.python.org/3/howto/curses.html 
+
+
+Used for:
+
+Understanding curses initialization
+Screen refreshing
+Keyboard input handling
+Color pair setup
+Non-blocking terminal updates
+Terminal rendering structure
+
+Functions and systems influenced by this documentation include:
+
+init_colors()
+draw()
+_draw_grid()
+_draw_legend()
+_draw_hud()
+_show_end_screen()
+
+
+YouTube tutorial(s)
+
+Source:
+https://www.youtube.com/playlist?list=PLzMcBGfZo4-n2TONAOImWL4sgZsmyMBc8
+Used for:
+Learning how movement and real-time updates work in curses
+Understanding terminal-based game loops
+Understanding timing systems using time
+Learning how moving entities can update positions on screen
+
+The following systems/classes were influenced by these tutorials:
+
+Threat class movement behavior
+Threat.roam()
+_move_threats()
+
+Real-time movement timing using:
+
+time.time()
+Non-blocking keyboard interaction using cursess
+These systems were adapted and expanded significantly for our own gameplay mechanics
