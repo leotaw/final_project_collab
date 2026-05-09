@@ -613,7 +613,16 @@ class Game:
 
 
    def _draw_header(self):
-       """Renders the game title bar centered across the top of the terminal."""
+       """Renders the game title bar centered across the top of the terminal.
+       Attributes: 
+           stdscr (curses): curses window for terminal rendering and outputs 
+       
+       Side Effects:
+           Writes to stdout formatted/rendered/bolded/colored text 
+           
+       Raises: 
+           curses.error: if drawing operations cannot be rendered/outside terminal boundaries. 
+       """
        title = " GRID RIVALRY "
        try:
            self.stdscr.addstr(
@@ -628,10 +637,22 @@ class Game:
        """
        Iterates every cell in the 10x10 grid and renders it at the correct
        terminal position with the appropriate character and color.
-
-
        Rendering priority from highest to lowest:
            player > threat > goal > tool > obstacle > revealed empty > fog
+       
+       Attributes:
+           world.grid: 2D game map containing cell dictionaries with information
+           about tools, obstacles, and reveal status
+           p.r (int): player row position
+           p.c (int): player collumn position
+           stdscr: curses window object for terminal rendering and outputs 
+
+       
+       Side Effects:
+           Writes to stdout formatted/rendered/bolded/colored text with priorotized renderings
+           
+       Raises: 
+           curses.error: if drawing operations cannot be rendered/outside terminal boundaries. 
        """
        start_row        = 2
        cell_width       = 6
