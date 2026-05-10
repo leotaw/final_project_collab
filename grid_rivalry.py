@@ -60,6 +60,20 @@ def init_colors():
    curses.init_pair(color_header,   curses.COLOR_CYAN,   curses.COLOR_BLACK)
 
 class DifficultyManager:
+    """ 
+    Manages game difficulty settings incliding entity movement and spawn
+    rates
+    
+    Arguments:
+        Level(str): The difficulty tier string (Easy, Medium, or Hard)
+        
+    Attributes:
+        level(str): The current difficulty setting for the session of the game
+        speed(float): the movement delay or speed multiplier based on difficulty
+    
+     Side Effects:
+        Calculates and assigns a flot to self.speed based on the input level
+    """
     def __init__(self, level="easy"):
         self.level = level
         self.speed = 0.7 if level == "easy" else \
@@ -68,14 +82,54 @@ class DifficultyManager:
     def get_spawn_rate(self):
         rates = {"easy": 10, "medium": 7, "hard": 5}
         return rates.get(self.level, 8)
+    
+class Entity:
+    """
+    Base class handling shared positional logic for all grid-based objects.
+    """
 
-class Player:
+    def __init__(self, r=0, c=0):
+        """
+        Initializes the shared row and column attributes for a grid entity.
+
+        Args:
+            r (int): the starting row position on the grid
+            c (int): the starting column position on the grid
+
+        Attributes:
+            r (int): the current row coordinate of the entity
+            c (int): the current column coordinate of the entity
+
+        Side Effects:
+            Creates a new Entity instance with defined grid coordinates.
+        """
+        self.r = r
+        self.c = c
+
+    def get_pos(self):
+        """
+        Returns the current coordinates of the entity as a tuple.
+
+        Returns:
+            tuple: a (row, column) pair representing the current position
+        """
+        return (self.r, self.c)
+
+class Player(Entity):
    """Represents the player's position, inventory, lives, and score."""
 
 
    def __init__(self):
-       """Places the player at the top-left corner with 3 lives and an empty bag.
-       Initializes Player object.
+       """
+       Initializes the player by calling the parent Entity constuctor and
+       setting starting lives, score, and empty bag/inventory
+       
+       Attributes:
+       r (int): player's row, postiion, initialized via super()
+       c (int): player's column position, initialized via super()
+       inventory (list of str): stores collected tools/items
+       lives (int): players starting number of lives
+       score (int): player's starting score
        
        Attributes: 
             r (int): player's starting row position
@@ -122,7 +176,7 @@ class Player:
        self.lives -= 1
        return self.lives > 0
 
-class Threat:
+class Threat(Entity):
    """A moving enemy that roams the grid every half second and penalizes the 
     player on contact."""
 
@@ -137,18 +191,23 @@ class Threat:
            penalty_type (str): one of 'steal', 'reset', or 'bomb'
            
         Attributes: 
-            r (int): Threat's row position 
-            c (int): Threat's column position 
+            r (int): Threat's row position, initialized via super()
+            c (int): Threat's column position initialized via super()
+            char (str): Charcter representation of threat
+            name (str): name of threat
+            penalty_type (str): describes the specific penalty logic
             
         Side Effects: 
-            Creates new Threat instance with its corresponding values and 
-            starting position. 
+            Creates new Threat instance. Calculates random coordinates and passes
+            them to Entity parent constructor via super() 
        """
+       
+       start_r           = random.randint(3, rows - 4)
+       start_c            = random.randint(3, cols - 4)
+       super().__init__(r=start_r, c=start_c)
        self.char         = char
        self.name         = name
        self.penalty_type = penalty_type
-       self.r            = random.randint(3, rows - 4)
-       self.c            = random.randint(3, cols - 4)
 
 
    def roam(self, forbidden):
@@ -163,7 +222,7 @@ class Threat:
             c (int): Threat collumn position 
             
         Side Effects: 
-            updates Threat object's position
+            updates the inherited (r,c) coordinates to move the threat
        """
        directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
        random.shuffle(directions)
@@ -281,9 +340,14 @@ class Game:
 
         Arguments:
            stdscr: the curses standard screen object passed in by curses.wrapper
+           difficulty: the level of challenge chosen by the player
            
         Attributes:
             stdscr: the curses standard screen object for rendering/keyboard input
+            diff_settings: DifficultyManger instase handling speed/spawn logic
+            threat_interval: Speed at which threats roam the grid
+            spawn_rate: moves required to trigger a new obstacle spawn
+            diff_name: string representation of the chosen difficulty
             player: represenging current player state 
             game_running (bool): boolean value, determining if game loop continues 
             status_msg (str): instruction/status message for player 
@@ -291,8 +355,9 @@ class Game:
             last_threat_time: Timestamp of last threat update 
         
         Side Effects: 
-            Creates new GameWorld() and Player() objects. Turns off visibility of 
-            cursor in the Terminal. Initializes curses color pairs with init_colors(). 
+            Creates new DifficultyManger, GameWorld() and Player() objects. 
+            Turns off visibility of cursor in the Terminal. 
+            Initializes curses color pairs with init_colors(). 
             records current system time with time.time() 
        """
        self.stdscr           = stdscr
@@ -723,7 +788,8 @@ class Game:
    def _draw_hud(self):
        """
        Renders the heads-up display below the grid showing lives, score,
-       progress bar, current bag contents, and the latest status message.
+       progress bar, current bag contents, current game difficulty,
+       and the latest status message.
        """
        p = self.player
        hud_row = rows + 3
@@ -839,7 +905,13 @@ class Game:
        self.stdscr.getch()
 
 def get_args():
-    """ ArgumentParser for terminal, used to specify difficulty in the game"""
+    """
+    Sets up ArgParser to handle command-line difficulty settings
+    
+    Side Effects:
+        Access command-line arguments and may terminate the program if invalid
+        arguments are provided by the player
+    """
     parser = argparse.ArgumentParser(description="Grid Rivalry")
     parser.add_argument(
         "--diff", 
@@ -851,6 +923,16 @@ def get_args():
     return parser.parse_args()
 
 def main(stdscr, difficulty="easy"):
+    """
+    Acts as the entry point for curses application, creating the game.
+    Args:
+        stdscr: The curses standad screen object passed int he curses
+        wrapper
+        difficulty (str): the level of challenge chosen by the player
+        
+    side effects:
+        Creates a new Game instace and initiates the primary game loop
+    """
     game = Game(stdscr, difficulty=difficulty)
     game.run()
 
