@@ -2,6 +2,7 @@
 import curses
 import random
 import time
+import argparse
 
 rows             = 10
 cols             = 10
@@ -57,6 +58,16 @@ def init_colors():
    curses.init_pair(color_fog,      curses.COLOR_BLACK,  curses.COLOR_BLACK)
    curses.init_pair(color_status,   curses.COLOR_YELLOW, curses.COLOR_BLACK)
    curses.init_pair(color_header,   curses.COLOR_CYAN,   curses.COLOR_BLACK)
+
+class DifficultyManager:
+    def __init__(self, level="easy"):
+        self.level = level
+        self.speed = 0.7 if level == "easy" else \
+                     (0.4 if level == "medium" else 0.2)
+        
+    def get_spawn_rate(self):
+        rates = {"easy": 10, "medium": 7, "hard": 5}
+        return rates.get(self.level, 8)
 
 class Player:
    """Represents the player's position, inventory, lives, and score."""
@@ -262,7 +273,7 @@ class Game:
    """
 
 
-   def __init__(self, stdscr):
+   def __init__(self, stdscr, difficulty="easy"):
        """
        Initializes curses settings, creates the world and player, and sets
        the starting status message and internal timers.
@@ -285,6 +296,10 @@ class Game:
             records current system time with time.time() 
        """
        self.stdscr           = stdscr
+       self.diff_settings    = DifficultyManager(difficulty)
+       self.threat_interval  = self.diff_settings.speed
+       self.spawn_rate       = self.diff_settings.get_spawn_rate()
+       self.diff_name        = difficulty
        self.world            = GameWorld()
        self.player           = Player()
        self.game_running     = True
@@ -328,7 +343,7 @@ class Game:
 
 
            now = time.time()
-           if now - self.last_threat_time >= threat_interval:
+           if now - self.last_threat_time >= self.threat_interval:
                self._move_threats()
                self.last_threat_time = now
 
@@ -452,7 +467,7 @@ class Game:
 
 
        self.move_count += 1
-       if self.move_count % spawn_interval == 0:
+       if self.move_count % self.spawn_rate == 0:
            self.world.spawn_obstacle((p.r, p.c))
            self.status_msg = "A new obstacle appeared somewhere on the map!"
 
@@ -710,11 +725,12 @@ class Game:
        Renders the heads-up display below the grid showing lives, score,
        progress bar, current bag contents, and the latest status message.
        """
-       p       = self.player
+       p = self.player
        hud_row = rows + 3
 
        hearts    = "♥ " * p.lives + "♡ " * (max_lives - p.lives)
        lives_str = f" Lives: {hearts.strip()} "
+       
        try:
            self.stdscr.addstr(
                hud_row, 0, lives_str,
@@ -759,6 +775,13 @@ class Game:
                f" {msg} ".ljust(80),
                curses.color_pair(color_status)
            )
+       except curses.error:
+           pass
+       
+       hud_row += 1
+       msg = f" {self.diff_name.upper()} | {self.status_msg}"[:79]
+       try:
+           self.stdscr.addstr(hud_row, 0, msg, curses.color_pair(color_status))
        except curses.error:
            pass
 
@@ -815,19 +838,23 @@ class Game:
        self.stdscr.refresh()
        self.stdscr.getch()
 
-def main(stdscr):
-   """Entry point called by curses.wrapper: creates a Game instance and runs it.
+def get_args():
+    """ ArgumentParser for terminal, used to specify difficulty in the game"""
+    parser = argparse.ArgumentParser(description="Grid Rivalry")
+    parser.add_argument(
+        "--diff", 
+        type=str, 
+        choices=["easy", "medium", "hard"], 
+        default="easy",
+        help="Set the game difficulty"
+    )
+    return parser.parse_args()
 
-   Parameters: 
-      stdscr: Main curses window object used for terminal rendering, screen updates, 
-              and input handling.
-   Side Effects:
-       creates/initializes Game instance, runs the game loop, modify terminal display/perfoms 
-       terminal rendering using input handling through curses. 
-   """
-   game = Game(stdscr)
-   game.run()
+def main(stdscr, difficulty="easy"):
+    game = Game(stdscr, difficulty=difficulty)
+    game.run()
 
 if __name__ == "__main__":
-   curses.wrapper(main)
+    args = get_args()
+    curses.wrapper(main, difficulty=args.diff)
 
